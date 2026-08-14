@@ -2,13 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import {
-  Button,
-  Card,
-  Input,
-  Spinner,
-  Textarea,
-} from "@heroui/react";
+import { Button, Card, Input, Spinner } from "@heroui/react";
 import { Property, Key } from "@/lib/types";
 
 type Step = "welcome" | "search" | "select" | "confirm" | "complete";
@@ -228,7 +222,7 @@ export default function TabletReturnPage() {
               </Button>
               <Button
                 onClick={handlePropertySearch}
-                isLoading={loading}
+                isDisabled={loading}
                 color="success"
                 className={`flex-1 ${tabletButtonClass}`}
               >
@@ -256,14 +250,17 @@ export default function TabletReturnPage() {
               )}
             </div>
 
-            <Textarea
-              label="Notes (optional)"
-              placeholder="Add any notes about the return..."
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-              size="lg"
-              classNames={{ input: "text-lg", label: "text-lg" }}
-            />
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Notes (optional)
+              </label>
+              <textarea
+                placeholder="Add any notes about the return..."
+                value={notes}
+                onChange={(event) => setNotes(event.target.value)}
+                className="w-full rounded-lg border border-gray-300 bg-white px-3 py-3 text-lg text-gray-900 min-h-28"
+              />
+            </div>
 
             <div className="flex gap-4 pt-4">
               <Button
@@ -275,7 +272,7 @@ export default function TabletReturnPage() {
               </Button>
               <Button
                 onClick={handleConfirmReturn}
-                isLoading={loading}
+                isDisabled={loading}
                 color="success"
                 className={`flex-1 ${tabletButtonClass}`}
               >
