@@ -1,26 +1,19 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useAuth } from "@/lib/auth-context";
 import { useRouter, useParams } from "next/navigation";
 import {
   Button,
   Card,
   Input,
-  Select,
-  SelectItem,
-  Modal,
-  ModalContent,
-  ModalHeader,
-  ModalBody,
-  ModalFooter,
-  useDisclosure,
   Spinner,
   Chip,
-  Divider,
-  Textarea,
+  TextArea,
+  Label,
+  TextField,
 } from "@heroui/react";
-import { Property, Key, User, Activity } from "@/lib/types";
+import { Key, User, Activity } from "@/lib/types";
 
 interface PropertyDetails {
   id: string;
@@ -57,9 +50,10 @@ export default function PropertyDetailsPage() {
 
   const [property, setProperty] = useState<PropertyDetails | null>(null);
   const [loading, setLoading] = useState(true);
+  const [showCheckoutModal, setShowCheckoutModal] = useState(false);
+  const [showCheckinModal, setShowCheckinModal] = useState(false);
 
   // Checkout modal state
-  const checkoutModal = useDisclosure();
   const [checkoutForm, setCheckoutForm] = useState({
     holderName: "",
     holderPhone: "",
@@ -69,20 +63,10 @@ export default function PropertyDetailsPage() {
   const [checkingOut, setCheckingOut] = useState(false);
 
   // Checkin modal state
-  const checkinModal = useDisclosure();
   const [checkinNote, setCheckinNote] = useState("");
   const [checkingIn, setCheckingIn] = useState(false);
 
-  useEffect(() => {
-    if (!user || user.role !== "staff") {
-      router.push("/login");
-      return;
-    }
-
-    loadPropertyDetails();
-  }, [user, router, propertyId]);
-
-  const loadPropertyDetails = async () => {
+  const loadPropertyDetails = useCallback(async () => {
     try {
       setLoading(true);
       const response = await fetch(`/api/properties/${propertyId}`);
@@ -96,7 +80,16 @@ export default function PropertyDetailsPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [propertyId]);
+
+  useEffect(() => {
+    if (!user || user.role !== "staff") {
+      router.push("/login");
+      return;
+    }
+
+    void loadPropertyDetails();
+  }, [user, router, propertyId, loadPropertyDetails]);
 
   const handleCheckout = async () => {
     if (!property || !user) return;
@@ -129,8 +122,8 @@ export default function PropertyDetailsPage() {
 
       if (response.ok) {
         setCheckoutForm({ holderName: "", holderPhone: "", reason: "", returnTime: "60" });
-        checkoutModal.onClose();
-        loadPropertyDetails();
+        setShowCheckoutModal(false);
+        void loadPropertyDetails();
       } else {
         alert("Failed to check out key");
       }
@@ -161,8 +154,8 @@ export default function PropertyDetailsPage() {
 
       if (response.ok) {
         setCheckinNote("");
-        checkinModal.onClose();
-        loadPropertyDetails();
+        setShowCheckinModal(false);
+        void loadPropertyDetails();
       } else {
         alert("Failed to check in key");
       }
@@ -188,9 +181,9 @@ export default function PropertyDetailsPage() {
         <Card className="p-8">
           <p className="text-gray-900 font-semibold">Property not found</p>
           <Button
+            variant="primary"
             onClick={() => router.push("/dashboard")}
             className="mt-4"
-            color="primary"
           >
             Back to Dashboard
           </Button>
@@ -207,11 +200,11 @@ export default function PropertyDetailsPage() {
       <header className="bg-white shadow-sm border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-6 py-4">
           <Button
-            variant="light"
+            variant="ghost"
             onClick={() => router.push("/dashboard")}
             className="mb-4 text-blue-600"
           >
-            ← Back to Dashboard
+            Back to Dashboard
           </Button>
           <h1 className="text-3xl font-bold text-gray-900">
             {property.address}
@@ -246,7 +239,7 @@ export default function PropertyDetailsPage() {
                           ? "warning"
                           : "danger"
                     }
-                    variant="flat"
+                    variant="soft"
                   >
                     {key.status === "available"
                       ? "Available"
@@ -326,16 +319,16 @@ export default function PropertyDetailsPage() {
               <div className="flex gap-3 pt-4">
                 {key.status === "available" ? (
                   <Button
-                    color="primary"
-                    onClick={checkoutModal.onOpen}
+                    variant="primary"
+                    onClick={() => setShowCheckoutModal(true)}
                     size="lg"
                   >
                     Check Out Keys
                   </Button>
                 ) : (
                   <Button
-                    color="success"
-                    onClick={checkinModal.onOpen}
+                    variant="secondary"
+                    onClick={() => setShowCheckinModal(true)}
                     size="lg"
                   >
                     Check In Keys
@@ -348,7 +341,7 @@ export default function PropertyDetailsPage() {
           )}
         </Card>
 
-        <Divider />
+        <div className="border-t border-gray-200" />
 
         {/* Activity Timeline */}
         <Card className="p-6">
@@ -389,14 +382,14 @@ export default function PropertyDetailsPage() {
       </main>
 
       {/* Checkout Modal */}
-      <Modal isOpen={checkoutModal.isOpen} onOpenChange={checkoutModal.onOpenChange}>
-        <ModalContent>
-          {(onClose) => (
-            <>
-              <ModalHeader>Check Out Keys</ModalHeader>
-              <ModalBody className="space-y-4">
+      {showCheckoutModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <Card className="w-96 max-w-full p-6">
+            <h2 className="text-xl font-bold mb-4">Check Out Keys</h2>
+            <div className="space-y-4 mb-6">
+              <TextField>
+                <Label>Visitor Name</Label>
                 <Input
-                  label="Visitor Name"
                   placeholder="Enter name"
                   value={checkoutForm.holderName}
                   onChange={(e) =>
@@ -406,9 +399,11 @@ export default function PropertyDetailsPage() {
                     })
                   }
                 />
+              </TextField>
 
+              <TextField>
+                <Label>Phone Number</Label>
                 <Input
-                  label="Phone Number"
                   type="tel"
                   placeholder="Enter phone"
                   value={checkoutForm.holderPhone}
@@ -419,10 +414,11 @@ export default function PropertyDetailsPage() {
                     })
                   }
                 />
+              </TextField>
 
-                <Select
-                  label="Reason for Checkout"
-                  placeholder="Select a reason"
+              <div>
+                <Label>Reason for Checkout</Label>
+                <select
                   value={checkoutForm.reason}
                   onChange={(e) =>
                     setCheckoutForm({
@@ -430,17 +426,20 @@ export default function PropertyDetailsPage() {
                       reason: e.target.value,
                     })
                   }
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg"
                 >
+                  <option value="">Select a reason</option>
                   {CHECKOUT_REASONS.map((reason) => (
-                    <SelectItem key={reason} value={reason}>
+                    <option key={reason} value={reason}>
                       {reason}
-                    </SelectItem>
+                    </option>
                   ))}
-                </Select>
+                </select>
+              </div>
 
-                <Select
-                  label="Expected Return Time"
-                  placeholder="Select return time"
+              <div>
+                <Label>Expected Return Time</Label>
+                <select
                   value={checkoutForm.returnTime}
                   onChange={(e) =>
                     setCheckoutForm({
@@ -448,81 +447,83 @@ export default function PropertyDetailsPage() {
                       returnTime: e.target.value,
                     })
                   }
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg"
                 >
+                  <option value="">Select return time</option>
                   {RETURN_TIME_OPTIONS.map((option) => (
-                    <SelectItem key={option.value} value={option.value.toString()}>
+                    <option key={option.value} value={option.value.toString()}>
                       {option.label}
-                    </SelectItem>
+                    </option>
                   ))}
-                </Select>
-              </ModalBody>
-              <ModalFooter>
-                <Button
-                  color="default"
-                  onClick={onClose}
-                  isDisabled={checkingOut}
-                >
-                  Cancel
-                </Button>
-                <Button
-                  color="primary"
-                  onClick={handleCheckout}
-                  isLoading={checkingOut}
-                  isDisabled={
-                    !checkoutForm.holderName ||
-                    !checkoutForm.reason ||
-                    checkingOut
-                  }
-                >
-                  Confirm Checkout
-                </Button>
-              </ModalFooter>
-            </>
-          )}
-        </ModalContent>
-      </Modal>
+                </select>
+              </div>
+            </div>
+
+            <div className="flex gap-2 justify-end">
+              <Button
+                variant="ghost"
+                onClick={() => setShowCheckoutModal(false)}
+                isDisabled={checkingOut}
+              >
+                Cancel
+              </Button>
+              <Button
+                variant="primary"
+                onClick={handleCheckout}
+                isDisabled={
+                  !checkoutForm.holderName ||
+                  !checkoutForm.reason ||
+                  checkingOut
+                }
+              >
+                Confirm Checkout
+              </Button>
+            </div>
+          </Card>
+        </div>
+      )}
 
       {/* Checkin Modal */}
-      <Modal isOpen={checkinModal.isOpen} onOpenChange={checkinModal.onOpenChange}>
-        <ModalContent>
-          {(onClose) => (
-            <>
-              <ModalHeader>Check In Keys</ModalHeader>
-              <ModalBody className="space-y-4">
-                <div className="bg-blue-50 p-4 rounded-lg">
-                  <p className="text-sm font-medium text-blue-900">
-                    Keys from: {key?.currentHolder?.name}
-                  </p>
-                </div>
+      {showCheckinModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <Card className="w-96 max-w-full p-6">
+            <h2 className="text-xl font-bold mb-4">Check In Keys</h2>
+            <div className="space-y-4 mb-6">
+              <div className="bg-blue-50 p-4 rounded-lg">
+                <p className="text-sm font-medium text-blue-900">
+                  Keys from: {key?.currentHolder?.name}
+                </p>
+              </div>
 
-                <Textarea
-                  label="Notes (optional)"
+              <TextField>
+                <Label>Notes (optional)</Label>
+                <TextArea
                   placeholder="Add any notes about the return..."
                   value={checkinNote}
                   onChange={(e) => setCheckinNote(e.target.value)}
                 />
-              </ModalBody>
-              <ModalFooter>
-                <Button
-                  color="default"
-                  onClick={onClose}
-                  isDisabled={checkingIn}
-                >
-                  Cancel
-                </Button>
-                <Button
-                  color="success"
-                  onClick={handleCheckin}
-                  isLoading={checkingIn}
-                  isDisabled={checkingIn}
-                >
-                  Confirm Check-In
-                </Button>
-              </ModalFooter>
-            </>
-          )}
-        </ModalContent>
-      </Modal>
+              </TextField>
+            </div>
+
+            <div className="flex gap-2 justify-end">
+              <Button
+                variant="ghost"
+                onClick={() => setShowCheckinModal(false)}
+                isDisabled={checkingIn}
+              >
+                Cancel
+              </Button>
+              <Button
+                variant="primary"
+                onClick={handleCheckin}
+                isDisabled={checkingIn}
+              >
+                Confirm Check-In
+              </Button>
+            </div>
+          </Card>
+        </div>
+      )}
     </div>
   );
 }

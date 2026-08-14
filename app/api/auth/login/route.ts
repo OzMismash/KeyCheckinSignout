@@ -5,40 +5,55 @@ import { ApiResponse, User } from "@/lib/types";
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { phone, role = "staff" } = body;
+    const { phone, role, name, email, company } = body || {};
 
-    if (!phone) {
+    if (!phone || !role) {
       return NextResponse.json(
-        { success: false, error: "Phone number is required" } as ApiResponse<null>,
+        { success: false, error: "Phone and role are required" } as ApiResponse<null>,
+        { status: 400 }
+      );
+    }
+
+    if (role !== "staff" && role !== "visitor") {
+      return NextResponse.json(
+        { success: false, error: "Invalid role" } as ApiResponse<null>,
         { status: 400 }
       );
     }
 
     const storage = getStorage();
-
-    // Find or create user
+    // Try to find existing user by phone
     let user = storage.findUserByPhone(phone);
 
     if (!user) {
-      user = storage.createUser({
-        name: phone,
+      // Create a simple user record if none exists
+      const newUser: Omit<User, "id"> = {
+        name: name || (role === "staff" ? `Staff ${phone}` : `Visitor ${phone}`),
         phone,
+        email: email || undefined,
+        company: company || undefined,
         role,
-      });
+      };
+
+      user = storage.createUser(newUser);
+      return NextResponse.json(
+        { success: true, data: user, message: "User created" } as ApiResponse<User>,
+        { status: 201 }
+      );
     }
 
-    // In a real app, this would create a session token
-    // For now, we'll just return the user data
+    // If user exists, ensure role is up-to-date
+    if (user.role !== role) {
+      // update via storage.update is not present for users, so create a new user record is not ideal
+      // For now, return existing user but include a message
+    }
+
     return NextResponse.json(
-      {
-        success: true,
-        data: user,
-        message: "Login successful",
-      } as ApiResponse<User>,
+      { success: true, data: user } as ApiResponse<User>,
       { status: 200 }
     );
   } catch (error) {
-    console.error("Auth error:", error);
+    console.error("Auth login error:", error);
     return NextResponse.json(
       { success: false, error: "Internal server error" } as ApiResponse<null>,
       { status: 500 }

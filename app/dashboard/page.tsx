@@ -7,12 +7,6 @@ import {
   Button,
   Card,
   Input,
-  Table,
-  TableHeader,
-  TableColumn,
-  TableBody,
-  TableRow,
-  TableCell,
   Spinner,
   Chip,
   Link,
@@ -30,20 +24,7 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
 
-  useEffect(() => {
-    if (!user) {
-      router.push("/login");
-      return;
-    }
-
-    if (user.role !== "staff") {
-      router.push("/login");
-      return;
-    }
-
-    loadProperties();
-  }, [user, router]);
-
+  // Load properties function
   const loadProperties = async () => {
     try {
       setLoading(true);
@@ -72,21 +53,39 @@ export default function DashboardPage() {
     }
   };
 
+  // Auth and data loading
+  useEffect(() => {
+    if (!user) {
+      router.push("/login");
+      return;
+    }
+
+    if (user.role !== "staff") {
+      router.push("/login");
+      return;
+    }
+
+    void loadProperties();
+  }, [user, router]);
+
   const filteredProperties = properties.filter((p) =>
     p.address.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   const getKeyStatus = (key: Key) => {
     if (key.status === "available") {
-      return <Chip color="success" variant="flat">Available</Chip>;
+      return <Chip color="success" variant="soft">Available</Chip>;
     } else if (key.status === "checked_out") {
-      return <Chip color="warning" variant="flat">Checked Out</Chip>;
+      return <Chip color="warning" variant="soft">Checked Out</Chip>;
     } else {
-      return <Chip color="danger" variant="flat">Overdue</Chip>;
+      return <Chip color="danger" variant="soft">Overdue</Chip>;
     }
   };
 
-  if (!user) return null;
+  // Check if user is authenticated (client-side only)
+  if (typeof window !== "undefined" && !user) {
+    return null;
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -95,11 +94,13 @@ export default function DashboardPage() {
         <div className="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
           <div>
             <h1 className="text-2xl font-bold text-gray-900">Key Tracker</h1>
-            <p className="text-sm text-gray-500">Welcome, {user.name}</p>
+            {user && (
+              <p className="text-sm text-gray-500">Welcome, {user.name}</p>
+            )}
           </div>
           <Button
             isIconOnly
-            variant="light"
+            variant="ghost"
             onClick={logout}
             className="text-gray-600"
           >
@@ -117,96 +118,109 @@ export default function DashboardPage() {
             placeholder="Search properties by address..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            size="lg"
           />
         </div>
 
-        {/* Properties Table */}
+        {/* Properties List */}
         {loading ? (
           <div className="flex justify-center py-12">
             <Spinner size="lg" />
           </div>
+        ) : filteredProperties.length === 0 ? (
+          <Card className="p-8 text-center">
+            <p className="text-gray-500">No properties found.</p>
+          </Card>
         ) : (
-          <Card>
-            <Table aria-label="Properties and keys">
-              <TableHeader>
-                <TableColumn>Property</TableColumn>
-                <TableColumn>Key Status</TableColumn>
-                <TableColumn>Current Holder</TableColumn>
-                <TableColumn>Expected Return</TableColumn>
-                <TableColumn>Actions</TableColumn>
-              </TableHeader>
-              <TableBody emptyContent="No properties found.">
-                {filteredProperties.map((property) => {
-                  const key = property.keys[0]; // Show first key for now
-                  return (
-                    <TableRow key={property.id}>
-                      <TableCell>
+          <div className="space-y-4">
+            {filteredProperties.map((property) => {
+              const key = property.keys[0]; // Show first key for now
+              return (
+                <Card key={property.id} className="p-6">
+                  <div className="grid grid-cols-1 md:grid-cols-5 gap-6">
+                    {/* Property Name */}
+                    <div className="md:col-span-1">
+                      <p className="text-sm font-medium text-gray-600 mb-1">
+                        Property
+                      </p>
+                      <p className="font-semibold text-gray-900">
+                        {property.address}
+                      </p>
+                      {property.description && (
+                        <p className="text-sm text-gray-500">
+                          {property.description}
+                        </p>
+                      )}
+                    </div>
+
+                    {/* Key Status */}
+                    <div className="md:col-span-1">
+                      <p className="text-sm font-medium text-gray-600 mb-1">
+                        Key Status
+                      </p>
+                      {key ? (
+                        getKeyStatus(key)
+                      ) : (
+                        <span className="text-gray-500">No keys</span>
+                      )}
+                    </div>
+
+                    {/* Current Holder */}
+                    <div className="md:col-span-1">
+                      <p className="text-sm font-medium text-gray-600 mb-1">
+                        Current Holder
+                      </p>
+                      {key?.currentHolder ? (
                         <div>
-                          <p className="font-semibold text-gray-900">
-                            {property.address}
+                          <p className="font-medium text-gray-900">
+                            {key.currentHolder.name}
                           </p>
-                          {property.description && (
+                          {key.currentHolder.company && (
                             <p className="text-sm text-gray-500">
-                              {property.description}
+                              {key.currentHolder.company}
                             </p>
                           )}
                         </div>
-                      </TableCell>
-                      <TableCell>
-                        {key ? (
-                          getKeyStatus(key)
-                        ) : (
-                          <span className="text-gray-500">No keys</span>
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        {key?.currentHolder ? (
-                          <div>
-                            <p className="font-medium text-gray-900">
-                              {key.currentHolder.name}
-                            </p>
-                            {key.currentHolder.company && (
-                              <p className="text-sm text-gray-500">
-                                {key.currentHolder.company}
-                              </p>
-                            )}
-                          </div>
-                        ) : (
-                          <span className="text-gray-500">-</span>
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        {key?.expectedReturnAt ? (
-                          <span className="text-sm">
-                            {new Date(key.expectedReturnAt).toLocaleTimeString(
-                              "en-US",
-                              {
-                                month: "short",
-                                day: "numeric",
-                                hour: "2-digit",
-                                minute: "2-digit",
-                              }
-                            )}
-                          </span>
-                        ) : (
-                          <span className="text-gray-500">-</span>
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        <Link
-                          href={`/properties/${property.id}`}
-                          className="text-blue-600 font-medium hover:text-blue-700"
-                        >
-                          View Details →
-                        </Link>
-                      </TableCell>
-                    </TableRow>
-                  );
-                })}
-              </TableBody>
-            </Table>
-          </Card>
+                      ) : (
+                        <span className="text-gray-500">-</span>
+                      )}
+                    </div>
+
+                    {/* Expected Return */}
+                    <div className="md:col-span-1">
+                      <p className="text-sm font-medium text-gray-600 mb-1">
+                        Expected Return
+                      </p>
+                      {key?.expectedReturnAt ? (
+                        <span className="text-sm">
+                          {new Date(key.expectedReturnAt).toLocaleString(
+                            "en-US",
+                            {
+                              month: "short",
+                              day: "numeric",
+                              hour: "2-digit",
+                              minute: "2-digit",
+                            }
+                          )}
+                        </span>
+                      ) : (
+                        <span className="text-gray-500">-</span>
+                      )}
+                    </div>
+
+                    {/* Actions */}
+                    <div className="md:col-span-1 flex items-center justify-end">
+                      <Link
+                        href={`/properties/${property.id}`}
+                        className="text-blue-600 font-medium hover:text-blue-700"
+                      >
+                        Details →
+                      </Link>
+                    </div>
+                  </div>
+                </Card>
+              );
+            })}
+          </div>
         )}
       </main>
     </div>
