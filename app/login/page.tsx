@@ -58,7 +58,18 @@ export default function LoginPage() {
           </div>
 
           <form onSubmit={handleLogin} className="space-y-6">
-            <div>
+            <div className="flex flex-col items-center gap-2">
+              <p className="text-xs font-medium text-gray-700 mt-1">
+                Name
+              </p>
+              <Input
+                type="text"
+                placeholder="Enter your name"
+                // ToDo: Add add functionality for name input           
+              />
+              <p className="text-xs font-medium text-gray-700 mt-1">
+                {role === "staff" ? "Phone Number" : "Mobile Number"}
+              </p>
               <Input
                 type="tel"
                 placeholder={role === "staff" ? "+1234567890" : "Enter your number"}
@@ -66,9 +77,6 @@ export default function LoginPage() {
                 onChange={(e) => setPhone(e.target.value)}
                 disabled={loading}
               />
-              <p className="text-xs font-medium text-gray-700 mt-1">
-                {role === "staff" ? "Phone Number" : "Mobile Number"}
-              </p>
               {role === "visitor" && (
                 <p className="text-sm text-gray-500 mt-2">
                   We&apos;ll use this to contact you about key returns.
