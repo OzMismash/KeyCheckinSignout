@@ -1,36 +1,54 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# key-checkin-signout — Demo Tool
 
-## Getting Started
+This repository contains a demo Next.js application (key-checkin-signout) used for demonstrating a simple check-in / check-out flow.
 
-First, run the development server:
+Prerequisites
+- Node.js (recommended: 18.x or later). Newer Node versions are generally supported; use an LTS release.
+- npm (bundled with Node) or yarn/pnpm if preferred.
+- Git (optional, for cloning or version control).
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+Getting started
+1. Open a terminal (PowerShell or Command Prompt).
+2. Clone or change to the project folder
+3. Install dependencies:
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+   npm install
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+   (Or `yarn` / `pnpm install` if you prefer those package managers.)
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+4. Run the development server:
 
-## Learn More
+   npm run dev
 
-To learn more about Next.js, take a look at the following resources:
+   The app will start in development mode (Next.js) and by default listens on http://localhost:3000.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+Build and production
+- Build for production:
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+  npm run build
 
-## Deploy on Vercel
+- Start the production server (after building):
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+  npm run start
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Linting
+- Run linter configured in the project:
+
+  npm run lint
+
+Notes about the project
+- Framework: Next.js (see [package.json](C:/Users/oscar/OneDrive/Desktop/InterviewProblem/key-checkin-signout/package.json)).
+- UI libraries and tooling: project depends on React, Next.js, Tailwind-related packages and design system packages used by the demo.
+- TypeScript: devDependencies include TypeScript and @types packages; the project may already be set up for TypeScript.
+
+Environment variables
+- This demo app does not require any enviroment varibles so the creation of a `.env` file is not needed
+
+Ports and URLs
+- Development: http://localhost:3000 (default Next.js port). If that port is in use, Next will prompt to use another port.
+
+Troubleshooting
+- "Cannot find module" or missing packages: re-run `npm install` inside `key-checkin-signout`.
+- Node version issues: use a Node version manager (nvm-windows, nvs) to switch to Node 18+.
+- Lint errors: run `npm run lint` and follow the output to fix issues.
+- Build errors: read the stack trace shown by `npm run build`.
