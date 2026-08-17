@@ -2,15 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import {
-  Button,
-  Card,
-  Input,
-  Select,
-  SelectItem,
-  Spinner,
-  Textarea,
-} from "@heroui/react";
+import { Button, Card, Input, Spinner } from "@heroui/react";
 import { Property, User } from "@/lib/types";
 
 type Step = "welcome" | "info" | "search" | "confirm" | "reason" | "time" | "signature" | "complete";
@@ -320,7 +312,7 @@ export default function TabletCheckinPage() {
               </Button>
               <Button
                 onClick={handlePropertySearch}
-                isLoading={loading}
+                isDisabled={loading}
                 color="primary"
                 className={`flex-1 ${tabletButtonClass}`}
               >
@@ -372,20 +364,23 @@ export default function TabletCheckinPage() {
               Reason for Visit
             </h2>
 
-            <Select
-              label="Select reason"
-              placeholder="Choose a reason"
-              value={visitReason}
-              onChange={(e) => setVisitReason(e.target.value)}
-              size="lg"
-              classNames={{ base: "text-lg", label: "text-lg" }}
-            >
-              {VISIT_REASONS.map((reason) => (
-                <SelectItem key={reason} value={reason} className="text-lg">
-                  {reason}
-                </SelectItem>
-              ))}
-            </Select>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Select reason
+              </label>
+              <select
+                value={visitReason}
+                onChange={(event) => setVisitReason(event.target.value)}
+                className="w-full rounded-lg border border-gray-300 bg-white px-3 py-3 text-lg text-gray-900"
+              >
+                <option value="">Choose a reason</option>
+                {VISIT_REASONS.map((reason) => (
+                  <option key={reason} value={reason}>
+                    {reason}
+                  </option>
+                ))}
+              </select>
+            </div>
 
             <div className="flex gap-4 pt-4">
               <Button
@@ -474,14 +469,17 @@ export default function TabletCheckinPage() {
               Please sign below to confirm receipt of keys
             </p>
 
-            <Textarea
-              label="Signature"
-              placeholder="Type your name to sign"
-              value={signature}
-              onChange={(e) => setSignature(e.target.value)}
-              size="lg"
-              classNames={{ input: "text-lg", label: "text-lg" }}
-            />
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Signature
+              </label>
+              <textarea
+                placeholder="Type your name to sign"
+                value={signature}
+                onChange={(event) => setSignature(event.target.value)}
+                className="w-full rounded-lg border border-gray-300 bg-white px-3 py-3 text-lg text-gray-900 min-h-28"
+              />
+            </div>
 
             <div className="flex gap-4 pt-4">
               <Button
@@ -493,7 +491,6 @@ export default function TabletCheckinPage() {
               </Button>
               <Button
                 onClick={handleCheckout}
-                isLoading={loading}
                 isDisabled={!signature || loading}
                 color="success"
                 className={`flex-1 ${tabletButtonClass}`}

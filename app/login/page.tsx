@@ -43,16 +43,14 @@ export default function LoginPage() {
           <div className="flex gap-2 mb-6">
             <Button
               onClick={() => setRole("staff")}
-              variant={role === "staff" ? "solid" : "bordered"}
-              color={role === "staff" ? "primary" : "default"}
+              variant={role === "staff" ? "primary" : "ghost"}
               fullWidth
             >
               Staff Login
             </Button>
             <Button
               onClick={() => setRole("visitor")}
-              variant={role === "visitor" ? "solid" : "bordered"}
-              color={role === "visitor" ? "primary" : "default"}
+              variant={role === "visitor" ? "primary" : "ghost"}
               fullWidth
             >
               Visitor Login
@@ -60,22 +58,28 @@ export default function LoginPage() {
           </div>
 
           <form onSubmit={handleLogin} className="space-y-6">
-            <div>
+            <div className="flex flex-col items-center gap-2">
+              <p className="text-xs font-medium text-gray-700 mt-1">
+                Name
+              </p>
+              <Input
+                type="text"
+                placeholder="Enter your name"
+                // ToDo: Add add functionality for name input           
+              />
+              <p className="text-xs font-medium text-gray-700 mt-1">
+                {role === "staff" ? "Phone Number" : "Mobile Number"}
+              </p>
               <Input
                 type="tel"
-                label={role === "staff" ? "Phone Number" : "Mobile Number"}
                 placeholder={role === "staff" ? "+1234567890" : "Enter your number"}
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
-                isDisabled={loading}
-                size="lg"
-                startContent={
-                  <span className="text-gray-400">📱</span>
-                }
+                disabled={loading}
               />
               {role === "visitor" && (
                 <p className="text-sm text-gray-500 mt-2">
-                  We'll use this to contact you about key returns.
+                  We&apos;ll use this to contact you about key returns.
                 </p>
               )}
             </div>
@@ -88,11 +92,9 @@ export default function LoginPage() {
 
             <Button
               type="submit"
-              color="primary"
-              isLoading={loading}
+              variant="primary"
               isDisabled={!phone || loading}
               fullWidth
-              size="lg"
               className="font-semibold"
             >
               {loading ? "Signing in..." : "Sign In"}

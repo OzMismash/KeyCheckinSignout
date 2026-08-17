@@ -1,26 +1,15 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useAuth } from "@/lib/auth-context";
 import { useRouter, useParams } from "next/navigation";
+import { Button, Card, Input, Spinner } from "@heroui/react";
+import { Activity, Key, User } from "@/lib/types";
 import {
-  Button,
-  Card,
-  Input,
-  Select,
-  SelectItem,
-  Modal,
-  ModalContent,
-  ModalHeader,
-  ModalBody,
-  ModalFooter,
-  useDisclosure,
-  Spinner,
-  Chip,
-  Divider,
-  Textarea,
-} from "@heroui/react";
-import { Property, Key, User, Activity } from "@/lib/types";
+  ActivityTimelineCard,
+  KeyCustodyCard,
+  PropertyHeader,
+} from "@/components/property/property-detail-panels";
 
 interface PropertyDetails {
   id: string;
@@ -57,32 +46,19 @@ export default function PropertyDetailsPage() {
 
   const [property, setProperty] = useState<PropertyDetails | null>(null);
   const [loading, setLoading] = useState(true);
-
-  // Checkout modal state
-  const checkoutModal = useDisclosure();
+  const [showCheckoutModal, setShowCheckoutModal] = useState(false);
+  const [showCheckinModal, setShowCheckinModal] = useState(false);
   const [checkoutForm, setCheckoutForm] = useState({
     holderName: "",
     holderPhone: "",
     reason: "",
     returnTime: "60",
   });
-  const [checkingOut, setCheckingOut] = useState(false);
-
-  // Checkin modal state
-  const checkinModal = useDisclosure();
   const [checkinNote, setCheckinNote] = useState("");
+  const [checkingOut, setCheckingOut] = useState(false);
   const [checkingIn, setCheckingIn] = useState(false);
 
-  useEffect(() => {
-    if (!user || user.role !== "staff") {
-      router.push("/login");
-      return;
-    }
-
-    loadPropertyDetails();
-  }, [user, router, propertyId]);
-
-  const loadPropertyDetails = async () => {
+  const loadPropertyDetails = useCallback(async () => {
     try {
       setLoading(true);
       const response = await fetch(`/api/properties/${propertyId}`);
@@ -96,7 +72,16 @@ export default function PropertyDetailsPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [propertyId]);
+
+  useEffect(() => {
+    if (!user || user.role !== "staff") {
+      router.push("/login");
+      return;
+    }
+
+    void loadPropertyDetails();
+  }, [user, router, propertyId, loadPropertyDetails]);
 
   const handleCheckout = async () => {
     if (!property || !user) return;
@@ -111,8 +96,9 @@ export default function PropertyDetailsPage() {
         role: "visitor",
       };
 
-      const returnMinutes = parseInt(checkoutForm.returnTime);
-      const expectedReturn = new Date(Date.now() + returnMinutes * 60000);
+      const expectedReturn = new Date(
+        Date.now() + Number.parseInt(checkoutForm.returnTime, 10) * 60000
+      );
 
       const response = await fetch("/api/keys/checkout", {
         method: "POST",
@@ -129,8 +115,8 @@ export default function PropertyDetailsPage() {
 
       if (response.ok) {
         setCheckoutForm({ holderName: "", holderPhone: "", reason: "", returnTime: "60" });
-        checkoutModal.onClose();
-        loadPropertyDetails();
+        setShowCheckoutModal(false);
+        void loadPropertyDetails();
       } else {
         alert("Failed to check out key");
       }
@@ -161,8 +147,8 @@ export default function PropertyDetailsPage() {
 
       if (response.ok) {
         setCheckinNote("");
-        checkinModal.onClose();
-        loadPropertyDetails();
+        setShowCheckinModal(false);
+        void loadPropertyDetails();
       } else {
         alert("Failed to check in key");
       }
@@ -187,11 +173,7 @@ export default function PropertyDetailsPage() {
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <Card className="p-8">
           <p className="text-gray-900 font-semibold">Property not found</p>
-          <Button
-            onClick={() => router.push("/dashboard")}
-            className="mt-4"
-            color="primary"
-          >
+          <Button variant="primary" onClick={() => router.push("/dashboard")} className="mt-4">
             Back to Dashboard
           </Button>
         </Card>
@@ -203,326 +185,128 @@ export default function PropertyDetailsPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header className="bg-white shadow-sm border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-6 py-4">
-          <Button
-            variant="light"
-            onClick={() => router.push("/dashboard")}
-            className="mb-4 text-blue-600"
-          >
-            ← Back to Dashboard
-          </Button>
-          <h1 className="text-3xl font-bold text-gray-900">
-            {property.address}
-          </h1>
-          {property.description && (
-            <p className="text-gray-500 mt-1">{property.description}</p>
-          )}
-        </div>
-      </header>
+      <PropertyHeader
+        address={property.address}
+        description={property.description}
+        onBack={() => router.push("/dashboard")}
+      />
 
-      {/* Main Content */}
       <main className="max-w-7xl mx-auto px-6 py-8 space-y-8">
-        {/* Key Custody Section */}
-        <Card className="p-6 border-l-4 border-blue-500">
-          <h2 className="text-2xl font-bold text-gray-900 mb-6">
-            Key Custody
-          </h2>
+        <KeyCustodyCard
+          currentKey={key}
+          onCheckout={() => setShowCheckoutModal(true)}
+          onCheckin={() => setShowCheckinModal(true)}
+        />
 
-          {key ? (
-            <div className="space-y-6">
-              {/* Status Grid */}
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <div className="bg-gray-50 p-4 rounded-lg">
-                  <p className="text-sm font-medium text-gray-600 mb-1">
-                    Status
-                  </p>
-                  <Chip
-                    color={
-                      key.status === "available"
-                        ? "success"
-                        : key.status === "checked_out"
-                          ? "warning"
-                          : "danger"
-                    }
-                    variant="flat"
-                  >
-                    {key.status === "available"
-                      ? "Available"
-                      : key.status === "checked_out"
-                        ? "Checked Out"
-                        : "Overdue"}
-                  </Chip>
-                </div>
-
-                {key.currentHolder && (
-                  <>
-                    <div className="bg-gray-50 p-4 rounded-lg">
-                      <p className="text-sm font-medium text-gray-600 mb-1">
-                        Current Holder
-                      </p>
-                      <p className="font-semibold text-gray-900">
-                        {key.currentHolder.name}
-                      </p>
-                      {key.currentHolder.company && (
-                        <p className="text-sm text-gray-500">
-                          {key.currentHolder.company}
-                        </p>
-                      )}
-                    </div>
-
-                    {key.checkedOutAt && (
-                      <div className="bg-gray-50 p-4 rounded-lg">
-                        <p className="text-sm font-medium text-gray-600 mb-1">
-                          Checked Out
-                        </p>
-                        <p className="font-semibold text-gray-900">
-                          {new Date(key.checkedOutAt).toLocaleTimeString(
-                            "en-US",
-                            {
-                              month: "short",
-                              day: "numeric",
-                              hour: "2-digit",
-                              minute: "2-digit",
-                            }
-                          )}
-                        </p>
-                      </div>
-                    )}
-
-                    {key.expectedReturnAt && (
-                      <div className="bg-gray-50 p-4 rounded-lg">
-                        <p className="text-sm font-medium text-gray-600 mb-1">
-                          Expected Return
-                        </p>
-                        <p className="font-semibold text-gray-900">
-                          {new Date(key.expectedReturnAt).toLocaleTimeString(
-                            "en-US",
-                            {
-                              month: "short",
-                              day: "numeric",
-                              hour: "2-digit",
-                              minute: "2-digit",
-                            }
-                          )}
-                        </p>
-                      </div>
-                    )}
-                  </>
-                )}
-              </div>
-
-              {key.reason && (
-                <div>
-                  <p className="text-sm font-medium text-gray-600 mb-1">
-                    Reason for Checkout
-                  </p>
-                  <p className="text-gray-900">{key.reason}</p>
-                </div>
-              )}
-
-              {/* Actions */}
-              <div className="flex gap-3 pt-4">
-                {key.status === "available" ? (
-                  <Button
-                    color="primary"
-                    onClick={checkoutModal.onOpen}
-                    size="lg"
-                  >
-                    Check Out Keys
-                  </Button>
-                ) : (
-                  <Button
-                    color="success"
-                    onClick={checkinModal.onOpen}
-                    size="lg"
-                  >
-                    Check In Keys
-                  </Button>
-                )}
-              </div>
-            </div>
-          ) : (
-            <p className="text-gray-500">No keys available for this property.</p>
-          )}
-        </Card>
-
-        <Divider />
-
-        {/* Activity Timeline */}
-        <Card className="p-6">
-          <h2 className="text-2xl font-bold text-gray-900 mb-6">
-            Activity Timeline
-          </h2>
-
-          {property.recentActivity && property.recentActivity.length > 0 ? (
-            <div className="space-y-4">
-              {property.recentActivity.map((activity) => (
-                <div
-                  key={activity.id}
-                  className="flex gap-4 pb-4 border-b border-gray-200 last:border-b-0"
-                >
-                  <div className="shrink-0">
-                    <div className="w-3 h-3 rounded-full bg-blue-500 mt-2" />
-                  </div>
-                  <div className="flex-1">
-                    <p className="font-medium text-gray-900">
-                      {activity.description}
-                    </p>
-                    <p className="text-sm text-gray-500">
-                      {new Date(activity.timestamp).toLocaleString("en-US", {
-                        month: "short",
-                        day: "numeric",
-                        hour: "2-digit",
-                        minute: "2-digit",
-                      })}
-                    </p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <p className="text-gray-500">No activity yet.</p>
-          )}
-        </Card>
+        <div className="border-t border-gray-200" />
+        <ActivityTimelineCard activities={property.recentActivity ?? []} />
       </main>
 
-      {/* Checkout Modal */}
-      <Modal isOpen={checkoutModal.isOpen} onOpenChange={checkoutModal.onOpenChange}>
-        <ModalContent>
-          {(onClose) => (
-            <>
-              <ModalHeader>Check Out Keys</ModalHeader>
-              <ModalBody className="space-y-4">
+      {showCheckoutModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <Card className="w-96 max-w-full p-6">
+            <h2 className="text-xl font-bold mb-4">Check Out Keys</h2>
+            <div className="space-y-4 mb-6">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Visitor Name</label>
                 <Input
-                  label="Visitor Name"
                   placeholder="Enter name"
                   value={checkoutForm.holderName}
-                  onChange={(e) =>
-                    setCheckoutForm({
-                      ...checkoutForm,
-                      holderName: e.target.value,
-                    })
+                  onChange={(event) =>
+                    setCheckoutForm({ ...checkoutForm, holderName: event.target.value })
                   }
                 />
+              </div>
 
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Phone Number</label>
                 <Input
-                  label="Phone Number"
                   type="tel"
                   placeholder="Enter phone"
                   value={checkoutForm.holderPhone}
-                  onChange={(e) =>
-                    setCheckoutForm({
-                      ...checkoutForm,
-                      holderPhone: e.target.value,
-                    })
+                  onChange={(event) =>
+                    setCheckoutForm({ ...checkoutForm, holderPhone: event.target.value })
                   }
                 />
+              </div>
 
-                <Select
-                  label="Reason for Checkout"
-                  placeholder="Select a reason"
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Reason</label>
+                <select
                   value={checkoutForm.reason}
-                  onChange={(e) =>
-                    setCheckoutForm({
-                      ...checkoutForm,
-                      reason: e.target.value,
-                    })
+                  onChange={(event) =>
+                    setCheckoutForm({ ...checkoutForm, reason: event.target.value })
                   }
+                  className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-gray-900"
                 >
+                  <option value="">Select a reason</option>
                   {CHECKOUT_REASONS.map((reason) => (
-                    <SelectItem key={reason} value={reason}>
+                    <option key={reason} value={reason}>
                       {reason}
-                    </SelectItem>
+                    </option>
                   ))}
-                </Select>
+                </select>
+              </div>
 
-                <Select
-                  label="Expected Return Time"
-                  placeholder="Select return time"
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Return Time</label>
+                <select
                   value={checkoutForm.returnTime}
-                  onChange={(e) =>
-                    setCheckoutForm({
-                      ...checkoutForm,
-                      returnTime: e.target.value,
-                    })
+                  onChange={(event) =>
+                    setCheckoutForm({ ...checkoutForm, returnTime: event.target.value })
                   }
+                  className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-gray-900"
                 >
                   {RETURN_TIME_OPTIONS.map((option) => (
-                    <SelectItem key={option.value} value={option.value.toString()}>
+                    <option key={option.value} value={String(option.value)}>
                       {option.label}
-                    </SelectItem>
+                    </option>
                   ))}
-                </Select>
-              </ModalBody>
-              <ModalFooter>
-                <Button
-                  color="default"
-                  onClick={onClose}
-                  isDisabled={checkingOut}
-                >
-                  Cancel
-                </Button>
-                <Button
-                  color="primary"
-                  onClick={handleCheckout}
-                  isLoading={checkingOut}
-                  isDisabled={
-                    !checkoutForm.holderName ||
-                    !checkoutForm.reason ||
-                    checkingOut
-                  }
-                >
-                  Confirm Checkout
-                </Button>
-              </ModalFooter>
-            </>
-          )}
-        </ModalContent>
-      </Modal>
+                </select>
+              </div>
+            </div>
 
-      {/* Checkin Modal */}
-      <Modal isOpen={checkinModal.isOpen} onOpenChange={checkinModal.onOpenChange}>
-        <ModalContent>
-          {(onClose) => (
-            <>
-              <ModalHeader>Check In Keys</ModalHeader>
-              <ModalBody className="space-y-4">
-                <div className="bg-blue-50 p-4 rounded-lg">
-                  <p className="text-sm font-medium text-blue-900">
-                    Keys from: {key?.currentHolder?.name}
-                  </p>
-                </div>
+            <div className="flex justify-end gap-3">
+              <Button variant="ghost" onClick={() => setShowCheckoutModal(false)}>
+                Cancel
+              </Button>
+              <Button
+                variant="primary"
+                onClick={handleCheckout}
+                isDisabled={checkingOut || !checkoutForm.holderName || !checkoutForm.holderPhone || !checkoutForm.reason}
+              >
+                Complete Checkout
+              </Button>
+            </div>
+          </Card>
+        </div>
+      )}
 
-                <Textarea
-                  label="Notes (optional)"
-                  placeholder="Add any notes about the return..."
-                  value={checkinNote}
-                  onChange={(e) => setCheckinNote(e.target.value)}
-                />
-              </ModalBody>
-              <ModalFooter>
-                <Button
-                  color="default"
-                  onClick={onClose}
-                  isDisabled={checkingIn}
-                >
-                  Cancel
-                </Button>
-                <Button
-                  color="success"
-                  onClick={handleCheckin}
-                  isLoading={checkingIn}
-                  isDisabled={checkingIn}
-                >
-                  Confirm Check-In
-                </Button>
-              </ModalFooter>
-            </>
-          )}
-        </ModalContent>
-      </Modal>
+      {showCheckinModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <Card className="w-96 max-w-full p-6">
+            <h2 className="text-xl font-bold mb-4">Check In Keys</h2>
+            <div className="space-y-4 mb-6">
+              <label className="block text-sm font-medium text-gray-700 mb-2">Notes</label>
+              <textarea
+                value={checkinNote}
+                onChange={(event) => setCheckinNote(event.target.value)}
+                placeholder="Optional check-in notes"
+                className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-gray-900 min-h-28"
+              />
+            </div>
+
+            <div className="flex justify-end gap-3">
+              <Button variant="ghost" onClick={() => setShowCheckinModal(false)}>
+                Cancel
+              </Button>
+              <Button variant="primary" isDisabled={checkingIn} onClick={handleCheckin}>
+                Confirm Check In
+              </Button>
+            </div>
+          </Card>
+        </div>
+      )}
     </div>
   );
 }
